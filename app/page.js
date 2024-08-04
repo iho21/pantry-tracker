@@ -37,7 +37,7 @@ export default function Home() {
       console.error("Error fetching pantry items: ", error);
     }
   };
-  
+
   const removeItem = async (itemId) => {
     const docRef = doc(firestore, 'pantry', itemId);
     const docSnap = await getDoc(docRef);
@@ -60,7 +60,24 @@ export default function Home() {
     if (docSnap.exists()) {
       const { quantity } = docSnap.data();
       await setDoc(docRef, { quantity: quantity + 1 }, { merge: true });
+      await updateInventory(); // Update pantry list after modification
     }
+  };
+
+  const handleAddNewItem = async () => {
+    if (itemName.trim() === '') return; // Ensure item name is not empty
+
+    const docRef = doc(firestore, 'pantry', itemName);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data();
+      await setDoc(docRef, { quantity: quantity + quantity }, { merge: true });
+    } else {
+      await setDoc(docRef, { name: itemName, quantity: quantity });
+    }
+    setItemName(''); // Clear itemName field
+    setQuantity(1); // Reset quantity to default
     await updateInventory();
   };
 
@@ -100,7 +117,7 @@ export default function Home() {
           InputProps={{ inputProps: { min: 1 } }}
         />
         <Box display="flex" gap={1}>
-          <Button variant="contained" color="primary" onClick={addItem}>
+          <Button variant="contained" color="primary" onClick={handleAddNewItem}>
             Add Item
           </Button>
         </Box>
