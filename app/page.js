@@ -10,14 +10,16 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper
+  Paper,
+  Button,
+  TextField
 } from '@mui/material';
-import { collection, deleteDoc, getDocs, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
 export default function Home() {
   const [pantry, setPantry] = useState([]);
-  const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState('');
+  const [quantity, setQuantity] = useState(1); // Default quantity for new items
 
   const updateInventory = async () => {
     try {
@@ -26,7 +28,8 @@ export default function Home() {
       querySnapshot.forEach((doc) => {
         inventoryList.push({
           id: doc.id, // Document ID as a unique key
-          ...doc.data()
+          name: doc.data().name || 'Unknown', // Ensure name is displayed
+          quantity: doc.data().quantity || 0  // Ensure quantity is displayed
         });
       });
       setPantry(inventoryList);
@@ -35,55 +38,74 @@ export default function Home() {
     }
   };
   
-  const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'pantry'), item)
-    const docSnap = await getDoc(docRef)
+  const removeItem = async (itemId) => {
+    const docRef = doc(firestore, 'pantry', itemId);
+    const docSnap = await getDoc(docRef);
 
-    if(docSnap.exists()) {
-      const {quantity} = docSnap.data()
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data();
       if (quantity === 1) {
-        await deleteDoc(docRef)
+        await deleteDoc(docRef);
+      } else {
+        await setDoc(docRef, { quantity: quantity - 1 }, { merge: true });
       }
-      else{
-        await setDoc(docRef, {quantity: quantity - 1})
-      }
     }
-    await updatePantry()
-  }
+    await updateInventory();
+  };
 
-  const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'pantry'), item)
-    const docSnap = await getDoc(docRef)
+  const addItem = async (itemId) => {
+    const docRef = doc(firestore, 'pantry', itemId);
+    const docSnap = await getDoc(docRef);
 
-    if(docSnap.exists()) {
-      const {quantity} = docSnap.data()
-      await setDoc(docRef, {quantity: quantity + 1})
-      
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data();
+      await setDoc(docRef, { quantity: quantity + 1 }, { merge: true });
     }
-    else {
-      await setDoc(docRef, {quantity: 1})
-    }
-    await updatePantry()
-  }
+    await updateInventory();
+  };
 
   useEffect(() => {
     updateInventory();
   }, []);
 
-  const handleOpen = () => setOpen(true)
-  const handleClose = () => setOpen(false)
   return (
     <Box
-      width = "100vw"
-      height = "100vh"
-      display = "flex"
-      justifyContent = "center"
-      alignItems = "center"
-      gap = {2}
+      width="100vw"
+      height="100vh"
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      gap={2}
     >
       <Typography variant="h1" gutterBottom>
         Pantry
       </Typography>
+      
+      <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
+        <TextField
+          label="Item Name"
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+          variant="outlined"
+          size="small"
+        />
+        <TextField
+          label="Quantity"
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value, 10))}
+          variant="outlined"
+          size="small"
+          InputProps={{ inputProps: { min: 1 } }}
+        />
+        <Box display="flex" gap={1}>
+          <Button variant="contained" color="primary" onClick={addItem}>
+            Add Item
+          </Button>
+        </Box>
+      </Box>
+
       {pantry.length === 0 ? (
         <Typography variant="h6">No items in the pantry</Typography>
       ) : (
@@ -101,7 +123,22 @@ export default function Home() {
                   <TableCell component="th" scope="row">
                     {item.name}
                   </TableCell>
-                  <TableCell align="right">{item.quantity}</TableCell>
+                  
+                  <TableCell align="right">
+                    <Button 
+                      variant="contained" 
+                      onClick={() => removeItem(item.id)}
+                    >
+                      -
+                    </Button>
+                    {item.quantity}
+                    <Button 
+                      variant="contained" 
+                      onClick={() => addItem(item.id)}
+                    >
+                      +
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
