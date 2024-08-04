@@ -20,6 +20,7 @@ export default function Home() {
   const [pantry, setPantry] = useState([]);
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState(1); // Default quantity for new items
+  const [searchQuery, setSearchQuery] = useState(''); // State variable for search query
 
   const updateInventory = async () => {
     try {
@@ -85,6 +86,11 @@ export default function Home() {
     updateInventory();
   }, []);
 
+  // Filter pantry items based on search query
+  const filteredPantry = pantry.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <Box
       width="100vw"
@@ -123,7 +129,16 @@ export default function Home() {
         </Box>
       </Box>
 
-      {pantry.length === 0 ? (
+      <TextField
+        label="Search"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        variant="outlined"
+        size="small"
+        style={{ marginTop: 20, marginBottom: 20 }}
+      />
+
+      {filteredPantry.length === 0 ? (
         <Typography variant="h6">No items in the pantry</Typography>
       ) : (
         <TableContainer component={Paper}>
@@ -135,7 +150,7 @@ export default function Home() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {pantry.map((item) => (
+              {filteredPantry.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell component="th" scope="row">
                     {item.name}
