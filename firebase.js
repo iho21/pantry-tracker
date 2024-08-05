@@ -1,5 +1,5 @@
 // firebase.js
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -12,11 +12,13 @@ const firebaseConfig = {
   measurementId: "G-6JNG7X4SPD"
 };
 
-let firestore;
-
-if (typeof window !== 'undefined') {
-  const app = initializeApp(firebaseConfig);
-  firestore = getFirestore(app);
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApp();
 }
+
+const firestore = getFirestore(app);
 
 export { firestore };
