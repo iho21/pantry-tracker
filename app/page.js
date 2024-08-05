@@ -21,6 +21,9 @@ export default function Home() {
   const [itemName, setItemName] = useState('');
   const [quantity, setQuantity] = useState(1); // Default quantity for new items
   const [searchQuery, setSearchQuery] = useState(''); // State variable for search query
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editingItemName, setEditingItemName] = useState('');
+  const [editingItemQuantity, setEditingItemQuantity] = useState('');
 
   const updateInventory = async () => {
     try {
@@ -79,6 +82,21 @@ export default function Home() {
     }
     setItemName(''); // Clear itemName field
     setQuantity(1); // Reset quantity to default
+    await updateInventory();
+  };
+
+  const startEditing = (item) => {
+    setEditingItemId(item.id);
+    setEditingItemName(item.name);
+    setEditingItemQuantity(item.quantity);
+  };
+
+  const handleUpdateItem = async () => {
+    const docRef = doc(firestore, 'pantry', editingItemId);
+    await setDoc(docRef, { name: editingItemName, quantity: parseInt(editingItemQuantity) }, { merge: true });
+    setEditingItemId(null);
+    setEditingItemName('');
+    setEditingItemQuantity('');
     await updateInventory();
   };
 
@@ -153,23 +171,58 @@ export default function Home() {
               {filteredPantry.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell component="th" scope="row">
-                    {item.name}
+                    <Box display="flex" alignItems="center" gap={1}>
+                      {editingItemId === item.id ? (
+                        <TextField
+                          value={editingItemName}
+                          onChange={(e) => setEditingItemName(e.target.value)}
+                          variant="outlined"
+                          size="small"
+                        />
+                      ) : (
+                        item.name
+                      )}
+                      {editingItemId === item.id && (
+                        <Button variant="contained" color="primary" onClick={handleUpdateItem}>
+                          Save
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
-                  
                   <TableCell align="right">
-                    <Button 
-                      variant="contained" 
-                      onClick={() => removeItem(item.id)}
-                    >
-                      -
-                    </Button>
-                    {item.quantity}
-                    <Button 
-                      variant="contained" 
-                      onClick={() => addItem(item.id)}
-                    >
-                      +
-                    </Button>
+                    <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
+                      {editingItemId === item.id ? (
+                        <TextField
+                          type="number"
+                          value={editingItemQuantity}
+                          onChange={(e) => setEditingItemQuantity(parseInt(e.target.value))}
+                          variant="outlined"
+                          size="small"
+                          InputProps={{ inputProps: { min: 1 } }}
+                        />
+                      ) : (
+                        <>
+                          <Button
+                            variant="contained"
+                            onClick={() => removeItem(item.id)}
+                            style={{ minWidth: '40px', minHeight: '40px', marginRight: '10px' }}
+                          >
+                            -
+                          </Button>
+                          {item.quantity}
+                          <Button
+                            variant="contained"
+                            onClick={() => addItem(item.id)}
+                            style={{ minWidth: '40px', minHeight: '40px', marginLeft: '10px' }}
+                          >
+                            +
+                          </Button>
+                          <Button variant="contained" onClick={() => startEditing(item)}>
+                            Update
+                          </Button>
+                        </>
+                      )}
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}
