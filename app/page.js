@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { firestore } from '@/firebase'; // Adjust the import based on your file structure
+import dynamic from 'next/dynamic';
 import {
   Box,
   Typography,
@@ -16,6 +16,9 @@ import {
 } from '@mui/material';
 import { collection, deleteDoc, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
 
+// Dynamically import firestore
+const firestore = dynamic(() => import('@/firebase').then(mod => mod.firestore), { ssr: false });
+
 export default function Home() {
   const [pantry, setPantry] = useState([]);
   const [itemName, setItemName] = useState('');
@@ -26,6 +29,7 @@ export default function Home() {
   const [editingItemQuantity, setEditingItemQuantity] = useState('');
 
   const updateInventory = async () => {
+    if (!firestore) return; // Ensure firestore is loaded
     try {
       const querySnapshot = await getDocs(collection(firestore, 'pantry'));
       const inventoryList = [];
@@ -43,6 +47,7 @@ export default function Home() {
   };
 
   const removeItem = async (itemId) => {
+    if (!firestore) return; // Ensure firestore is loaded
     const docRef = doc(firestore, 'pantry', itemId);
     const docSnap = await getDoc(docRef);
 
@@ -58,6 +63,7 @@ export default function Home() {
   };
 
   const addItem = async (itemId) => {
+    if (!firestore) return; // Ensure firestore is loaded
     const docRef = doc(firestore, 'pantry', itemId);
     const docSnap = await getDoc(docRef);
 
@@ -69,6 +75,7 @@ export default function Home() {
   };
 
   const handleAddNewItem = async () => {
+    if (!firestore) return; // Ensure firestore is loaded
     if (itemName.trim() === '') return; // Ensure item name is not empty
 
     const docRef = doc(firestore, 'pantry', itemName);
@@ -92,6 +99,7 @@ export default function Home() {
   };
 
   const handleUpdateItem = async () => {
+    if (!firestore) return; // Ensure firestore is loaded
     const docRef = doc(firestore, 'pantry', editingItemId);
     await setDoc(docRef, { name: editingItemName, quantity: parseInt(editingItemQuantity) }, { merge: true });
     setEditingItemId(null);
@@ -102,7 +110,7 @@ export default function Home() {
 
   useEffect(() => {
     updateInventory();
-  }, []);
+  }, [firestore]); // Ensure updateInventory runs when firestore is loaded
 
   // Filter pantry items based on search query
   const filteredPantry = pantry.filter(item =>
